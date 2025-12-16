@@ -12,9 +12,10 @@ Den absolut enklaste implementationen som använder Claude Codes befintliga **sk
 - Session summary (sammanfattad av Claude före Task spawn)
 - User corrections (what didn't work)
 
-**Storage:** Skills i `.claude/skills/learned-{topic}/`
-**Access:** Skills laddas automatiskt vid session start
-**Analys:** Claude Code Task tool (general-purpose agent)
+**Struktur:**
+- **Storage:** Skills i `~/.claude/skills/learned-{topic}/`
+- **Access:** Skills laddas automatiskt vid session start
+- **Analys:** Claude Code Task tool (general-purpose agent)
 
 ## Arkitektur
 
@@ -223,26 +224,44 @@ EOF
 
 ```markdown
 ---
-description: Extrahera learnings från session och spara som skills
-argument-hint: [scope]
+description: Analyze and extract learnings from session, changes or commit and save as skills. Default scope is uncommitted changes + session.
+argument-hint: [changes] [commit [<hash>]] [session]
 ---
 
-Analyze recent code changes and session learnings, then save as skills for future sessions.
+Analyze code changes and/or session learnings, then save as skills for future sessions.
 
 ## What this does
 
 1. Summarizes the current session (what was discussed, tried, worked/failed)
-2. Analyzes git diff (uncommitted changes or last commit)
+2. Analyzes code changes (uncommitted, commits, or both)
 3. Extracts patterns, techniques, and knowledge
 4. Categorizes by tags (security, performance, php, etc.)
 5. Updates or creates skills in ~/.claude/skills/learned-{tag}/
 6. Skills are automatically loaded in future sessions
 
+## Scope Options
+
+Three sources can be analyzed:
+- **`changes`** - Uncommitted changes (git diff)
+- **`commit [hash]`** - Specific commit (default: HEAD)
+- **`session`** - Session conversation and learnings
+
+**Default:** `changes session` (if no arguments given)
+**When specified:** Only analyze what you specify
+
 ## Usage
 
 ```bash
-/learn              # Analyze uncommitted changes + session
-/learn commit       # Analyze last commit + session
+/learn                          # Default: changes + session
+/learn session                  # Only session learnings
+/learn changes                  # Only uncommitted changes
+/learn commit                   # Only last commit (HEAD)
+/learn commit abc123            # Only specific commit
+/learn changes session          # Uncommitted + session
+/learn commit session           # Last commit + session
+/learn changes commit           # Uncommitted + last commit
+/learn changes commit session   # All three sources
+/learn changes commit abc123    # Uncommitted + specific commit
 ```
 
 ## Step 1: Session Summary (CRITICAL)
@@ -300,28 +319,44 @@ Before spawning the agent, verify your summary:
 Use the Task tool to spawn a general-purpose agent with this prompt:
 
 ```
-You are extracting learnings from code changes AND session context to build a rich knowledge base.
+You are extracting learnings from code changes and/or session context to build a rich knowledge base.
 
-SCOPE: {scope from argument, default: "uncommitted changes"}
+SCOPE: {Parse arguments and specify what to analyze:}
+- If no arguments: "changes + session"
+- If arguments given: only what's specified
+- Possible: "changes", "commit [hash]", "session", or combinations
+
+EXAMPLES:
+- /learn → analyze: changes + session
+- /learn session → analyze: session only
+- /learn changes commit abc123 → analyze: uncommitted changes + commit abc123
 
 SESSION SUMMARY (from main session):
-{Insert the session summary you created in Step 1 here}
+{Insert the session summary you created in Step 1 here - or skip this section if "session" not in scope}
 
 INSTRUCTIONS:
 
-1. READ THE DATA:
+1. READ THE DATA BASED ON SCOPE:
 
-   A. CODE CHANGES:
-   - Run: git diff (for uncommitted) or git show HEAD (for last commit)
+   A. CODE CHANGES (if "changes" in scope):
+   - Run: git diff
+   - This captures uncommitted changes (staged and unstaged)
 
-   B. SESSION SUMMARY (provided above):
-   - Review the session summary provided
+   B. COMMIT (if "commit" in scope):
+   - If hash provided: git show {hash}
+   - If no hash: git show HEAD
+   - This captures committed changes
+
+   C. SESSION SUMMARY (if "session" in scope):
+   - Review the session summary provided above
    - Note: what worked, what didn't, user corrections
    - This is your source of truth for session context
 
+   **If session NOT in scope:** Skip session summary analysis entirely
+
 2. CONTEXT POISONING PREVENTION:
 
-   CRITICAL: Session history contains BOTH good and bad approaches!
+   CRITICAL (if session in scope): Session summary contains BOTH good and bad approaches!
 
    - **Final code diff = ground truth** - What ended up in code is what worked
    - **User corrections** ("no not like that", "that didn't work") = failed approaches
@@ -331,6 +366,8 @@ INSTRUCTIONS:
    - ✅ **What Worked** - In final code, no user corrections
    - ❌ **What Didn't Work** - Tried but abandoned, user corrected, failed
    - 💡 **Key Insight** - Why one approach won over others
+
+   **If no session context:** Focus purely on code patterns and techniques visible in the diffs
 
 3. ANALYZE & EXTRACT:
 
@@ -483,16 +520,18 @@ This way:
 9. REPORT:
    - List which skills were created/updated
    - Show tags extracted
-   - Summarize what worked vs what didn't
+   - Summarize sources analyzed (changes/commit/session)
+   - If session in scope: summarize what worked vs what didn't
    - Confirm skills will be loaded next session
 
 IMPORTANT:
-- Failed approaches are VALUABLE - they prevent repeating mistakes
+- Failed approaches are VALUABLE (if session in scope) - they prevent repeating mistakes
 - Focus on reusable knowledge, not implementation details
 - Extract WHY decisions were made
-- Use actual code examples from the diff
-- Session history provides rich context - use it!
-- Context poisoning prevention is CRITICAL
+- Use actual code examples from the diffs
+- Session summary (if in scope) provides rich context - use it!
+- Context poisoning prevention is CRITICAL (when session in scope)
+- When only analyzing code: focus on patterns, techniques, and architectural decisions visible in the changes
 ```
 
 When the agent completes, you'll have skills that automatically load in future sessions!
@@ -504,12 +543,27 @@ When the agent completes, you'll have skills that automatically load in future s
 # Gör några ändringar i ett projekt
 # Ha en session där ni löser ett problem tillsammans
 
-# Kör learning extraction
+# Kör learning extraction (flera alternativ):
+
+# Default: uncommitted changes + session
 /learn
 
+# Eller bara session (utan kod)
+/learn session
+
+# Eller bara kod (utan session kontext)
+/learn changes
+
+# Eller committed kod + session
+git commit -m "Your changes"
+/learn commit session
+
+# Eller specifik commit (retroaktiv learning)
+/learn commit abc123
+
 # Claude:
-# 1. Sammanfattar sessionen
-# 2. Spawnar agent som läser git diff + summary
+# 1. Sammanfattar sessionen (om session i scope)
+# 2. Spawnar agent som läser kod och/eller session summary
 # 3. Skapar/uppdaterar skills
 
 # Verifiera att skills skapades
@@ -573,15 +627,23 @@ Claude: *Checks SKILL.md index*
 ```bash
 You: "Just fixed an XSS vulnerability in the comment form"
 
-# Make the fix, commit or stage it
+# Make the fix and commit it
 
 You: "/learn commit"
 
 Claude spawns agent:
-  - Analyzes the commit
-  - Extracts security pattern
+  - Analyzes the commit (no session context)
+  - Extracts security pattern from code
   - Creates/updates ~/.claude/skills/learned-security/
   - Adds entry about XSS prevention with DOMPurify
+
+# Or include session context if there was valuable discussion:
+You: "/learn commit session"
+
+Claude spawns agent:
+  - Analyzes both commit AND session summary
+  - Captures why this approach was chosen
+  - Documents any failed attempts discussed
 
 Next session:
   - learned-security skill loads automatically
@@ -618,16 +680,33 @@ You: "Just implemented OAuth2 flow"
 # - Switched to OAuth2
 # - Debugged token refresh issues
 
-You: "/learn"
+# Changes are uncommitted
+You: "/learn"  # Default: changes + session
 
 Claude:
   1. Summarizes session (JWT attempt, why it failed, OAuth2 solution)
-  2. Spawns agent with summary + git diff
+  2. Spawns agent with summary + uncommitted changes
   3. Agent extracts:
      - OAuth2 pattern (what worked)
      - JWT pitfalls (what didn't)
      - Token refresh debugging steps
   4. Creates learned-authentication skill
+
+# Alternative: Only extract from code without session context
+You: "/learn changes"
+
+Claude:
+  - Analyzes only the code changes
+  - Extracts OAuth2 implementation pattern
+  - No context about why JWT didn't work (less rich learning)
+
+# Or: Analyze old commit + current session
+You: "/learn commit abc123 session"
+
+Claude:
+  - Analyzes specific commit from history
+  - Includes current session discussion
+  - Useful for retroactive learning extraction
 
 Next session:
   - Claude knows OAuth2 approach
@@ -843,11 +922,18 @@ cat ~/.claude/skills/learned-php/SKILL.md
 ```bash
 # För uncommitted changes
 git status  # Kontrollera att det finns ändringar
-git add .   # Stage changes först
+git add .   # Stage changes först om du vill (git diff visar både staged och unstaged)
 
-# Eller använd commit scope
+# Alternativ:
+# 1. Använd commit scope istället
 git commit -m "Your changes"
 /learn commit
+
+# 2. Eller analysera bara session utan kod
+/learn session
+
+# 3. Eller analysera äldre commit
+/learn commit abc123
 ```
 
 ## Framtida förbättringar (optional)
