@@ -75,32 +75,64 @@ Varje gång du kör `/learn` får du välja var lärdomar ska sparas:
 
 ## Installation
 
-### Steg 1: Skapa slash command
+### Steg 1: Skapa slash command och instruktioner
 
-Kopiera `commands/learn.md` till `~/.claude/commands/learn.md`
+Kopiera filerna till din Claude-konfiguration:
 
 ```bash
-mkdir -p ~/.claude/commands
+# Skapa mappar
+mkdir -p ~/.claude/commands ~/.claude/docs
+
+# Kopiera filer
 cp commands/learn.md ~/.claude/commands/learn.md
+cp docs/learn-instructions.md ~/.claude/docs/learn-instructions.md
 ```
 
-### Steg 2: Konfigurera permissions (per projekt)
+**Varför två filer?** Slash commands laddas alltid i context. Genom att ha instruktionerna i en separat fil (`docs/`) sparar vi ~2.5k tokens som bara laddas när `/learn` körs.
 
-Lägg till i projektets `.claude/settings.local.json`:
+### Steg 2: Konfigurera permissions
+
+Permissions kan konfigureras globalt eller per projekt.
+
+#### Globalt (rekommenderat)
+
+Lägg till i `~/.claude/settings.json`:
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Read(~/.claude/skills/**)",
-      "Edit(~/.claude/skills/**)",
-      "Write(~/.claude/skills/**)"
+      "Bash(mkdir:~/.claude/skills/learned-*)",
+      "Bash(mkdir:.claude/skills/learned-*)",
+      "Read(~/.claude/docs/learn-instructions.md)",
+      "Read(~/.claude/skills/learned-*)",
+      "Edit(~/.claude/skills/learned-*)",
+      "Write(~/.claude/skills/learned-*)",
+      "Read(.claude/skills/learned-*)",
+      "Edit(.claude/skills/learned-*)",
+      "Write(.claude/skills/learned-*)"
     ]
   }
 }
 ```
 
+#### Per projekt
+
+Lägg till i projektets `.claude/settings.local.json` med samma innehåll som ovan.
+
 **Klart!** Nu kan du använda `/learn` i dina Claude Code-sessioner.
+
+### Permissions förklaring
+
+| Permission | Syfte |
+|------------|-------|
+| `Bash(mkdir:~/.claude/skills/learned-*)` | Skapa globala skill-mappar |
+| `Bash(mkdir:.claude/skills/learned-*)` | Skapa projektspecifika skill-mappar |
+| `Read(~/.claude/docs/learn-instructions.md)` | Läsa instruktionsfilen |
+| `Read/Edit/Write(~/.claude/skills/learned-*)` | Hantera globala skills |
+| `Read/Edit/Write(.claude/skills/learned-*)` | Hantera projektspecifika skills |
+
+**Notera:** Wildcards (`learned-*`) matchar alla learned-skills. Tilde (`~`) expanderas till home-katalogen.
 
 ## Nyckelfeatures
 
@@ -190,21 +222,37 @@ git commit -m "Fix XSS in comment form"
 ## Filorganisation
 
 ```
-~/.claude/skills/
-├── learned-security/
-│   ├── SKILL.md          # Lightweight index
-│   └── reference.md      # Full details
-├── learned-php/
-│   ├── SKILL.md
-│   └── reference.md
-└── learned-performance/
-    ├── SKILL.md
-    └── reference.md
+~/.claude/
+├── commands/
+│   └── learn.md              # Minimal slash command (~50 tokens)
+├── docs/
+│   └── learn-instructions.md # Fulla instruktioner (~2.5k tokens, on-demand)
+└── skills/
+    ├── learned-security/
+    │   ├── SKILL.md          # Lightweight index
+    │   └── reference.md      # Full details
+    ├── learned-php/
+    │   ├── SKILL.md
+    │   └── reference.md
+    └── learned-performance/
+        ├── SKILL.md
+        └── reference.md
 ```
+
+### Context-optimering
+
+Slash commands i `~/.claude/commands/` laddas **alltid** i context vid sessionsstart. Genom att separera instruktioner till `docs/` sparar vi tokens:
+
+| Fil | Storlek | Laddas |
+|-----|---------|--------|
+| `commands/learn.md` | ~50 tokens | Alltid |
+| `docs/learn-instructions.md` | ~2.5k tokens | Vid `/learn` |
+
+**Besparing:** ~2.5k tokens per session där `/learn` inte används.
 
 ## Fördelar
 
-- **Ingen setup-komplexitet** - Bara en slash command-fil
+- **Minimal setup** - En slash command + instruktionsfil
 - **Inga externa dependencies** - Använder enbart Claude Code
 - **Rik kunskapsextraktion** - Session-kontext + kodändringar
 - **Flexibel lagring** - Global eller projekt-specifik
@@ -216,19 +264,26 @@ git commit -m "Fix XSS in comment form"
 ### Slash command finns inte
 
 ```bash
+# Kontrollera att båda filerna finns
 ls ~/.claude/commands/learn.md
-# Om inte, kopiera från commands/learn.md
+ls ~/.claude/docs/learn-instructions.md
+
+# Om inte, kopiera från detta repo
 ```
 
 ### Agent skapar inte skills
 
-Vanligaste orsaken: Missing permissions i projektets settings.
+Vanligaste orsaken: Saknade permissions.
 
 ```bash
-# Kontrollera projektets settings
+# Kontrollera permissions (globalt eller per projekt)
+cat ~/.claude/settings.json
 cat .claude/settings.local.json
 
-# Se till att Write(~/.claude/skills/**) finns i allow-listan
+# Se till att följande finns i allow-listan:
+# - Bash(mkdir:*)
+# - Read(~/.claude/docs/learn-instructions.md)
+# - Write(~/.claude/skills/learned-*)
 ```
 
 ### Skills laddas inte

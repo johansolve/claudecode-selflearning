@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(~/.claude/skills/**)",
-      "Edit(~/.claude/skills/**)",
-      "Write(~/.claude/skills/**)"
-    ]
-  }
-}

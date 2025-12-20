@@ -75,32 +75,64 @@ Each time you run `/learn`, you choose where to save learnings:
 
 ## Installation
 
-### Step 1: Create the slash command
+### Step 1: Create slash command and instructions
 
-Copy `commands/learn.md` to `~/.claude/commands/learn.md`
+Copy the files to your Claude configuration:
 
 ```bash
-mkdir -p ~/.claude/commands
+# Create directories
+mkdir -p ~/.claude/commands ~/.claude/docs
+
+# Copy files
 cp commands/learn.md ~/.claude/commands/learn.md
+cp docs/learn-instructions.md ~/.claude/docs/learn-instructions.md
 ```
 
-### Step 2: Configure permissions (per project)
+**Why two files?** Slash commands are always loaded into context. By having the instructions in a separate file (`docs/`), we save ~2.5k tokens that are only loaded when `/learn` runs.
 
-Add to the project's `.claude/settings.local.json`:
+### Step 2: Configure permissions
+
+Permissions can be configured globally or per project.
+
+#### Global (recommended)
+
+Add to `~/.claude/settings.json`:
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Read(~/.claude/skills/**)",
-      "Edit(~/.claude/skills/**)",
-      "Write(~/.claude/skills/**)"
+      "Bash(mkdir:~/.claude/skills/learned-*)",
+      "Bash(mkdir:.claude/skills/learned-*)",
+      "Read(~/.claude/docs/learn-instructions.md)",
+      "Read(~/.claude/skills/learned-*)",
+      "Edit(~/.claude/skills/learned-*)",
+      "Write(~/.claude/skills/learned-*)",
+      "Read(.claude/skills/learned-*)",
+      "Edit(.claude/skills/learned-*)",
+      "Write(.claude/skills/learned-*)"
     ]
   }
 }
 ```
 
+#### Per project
+
+Add to the project's `.claude/settings.local.json` with the same content as above.
+
 **Done!** You can now use `/learn` in your Claude Code sessions.
+
+### Permissions explanation
+
+| Permission | Purpose |
+|------------|---------|
+| `Bash(mkdir:~/.claude/skills/learned-*)` | Create global skill directories |
+| `Bash(mkdir:.claude/skills/learned-*)` | Create project-specific skill directories |
+| `Read(~/.claude/docs/learn-instructions.md)` | Read the instructions file |
+| `Read/Edit/Write(~/.claude/skills/learned-*)` | Manage global skills |
+| `Read/Edit/Write(.claude/skills/learned-*)` | Manage project-specific skills |
+
+**Note:** Wildcards (`learned-*`) match all learned-skills. Tilde (`~`) expands to the home directory.
 
 ## Key features
 
@@ -190,21 +222,37 @@ git commit -m "Fix XSS in comment form"
 ## File organization
 
 ```
-~/.claude/skills/
-├── learned-security/
-│   ├── SKILL.md          # Lightweight index
-│   └── reference.md      # Full details
-├── learned-php/
-│   ├── SKILL.md
-│   └── reference.md
-└── learned-performance/
-    ├── SKILL.md
-    └── reference.md
+~/.claude/
+├── commands/
+│   └── learn.md              # Minimal slash command (~50 tokens)
+├── docs/
+│   └── learn-instructions.md # Full instructions (~2.5k tokens, on-demand)
+└── skills/
+    ├── learned-security/
+    │   ├── SKILL.md          # Lightweight index
+    │   └── reference.md      # Full details
+    ├── learned-php/
+    │   ├── SKILL.md
+    │   └── reference.md
+    └── learned-performance/
+        ├── SKILL.md
+        └── reference.md
 ```
+
+### Context optimization
+
+Slash commands in `~/.claude/commands/` are **always** loaded into context at session start. By separating instructions to `docs/`, we save tokens:
+
+| File | Size | Loaded |
+|------|------|--------|
+| `commands/learn.md` | ~50 tokens | Always |
+| `docs/learn-instructions.md` | ~2.5k tokens | On `/learn` |
+
+**Savings:** ~2.5k tokens per session where `/learn` is not used.
 
 ## Benefits
 
-- **No setup complexity** - Just one slash command file
+- **Minimal setup** - One slash command + instruction file
 - **No external dependencies** - Uses only Claude Code
 - **Rich knowledge extraction** - Session context + code changes
 - **Flexible storage** - Global or project-specific
@@ -216,19 +264,26 @@ git commit -m "Fix XSS in comment form"
 ### Slash command not found
 
 ```bash
+# Check that both files exist
 ls ~/.claude/commands/learn.md
-# If missing, copy from commands/learn.md
+ls ~/.claude/docs/learn-instructions.md
+
+# If missing, copy from this repo
 ```
 
 ### Agent doesn't create skills
 
-Most common cause: Missing permissions in project settings.
+Most common cause: Missing permissions.
 
 ```bash
-# Check project settings
+# Check permissions (global or per project)
+cat ~/.claude/settings.json
 cat .claude/settings.local.json
 
-# Make sure Write(~/.claude/skills/**) is in the allow list
+# Make sure these are in the allow list:
+# - Bash(mkdir:*)
+# - Read(~/.claude/docs/learn-instructions.md)
+# - Write(~/.claude/skills/learned-*)
 ```
 
 ### Skills don't load
