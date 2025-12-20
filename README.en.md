@@ -262,7 +262,7 @@ For users with 50+ learnings who need more advanced functionality, there's the p
 - **Usage tracking** - Track how often patterns are used
 - **MCP Server** - Dedicated tools for knowledge search
 
-See `ADVANCED_IMPLEMENTATION.md` for technical specification and implementation guide.
+See [`ADVANCED_IMPLEMENTATION.md`](ADVANCED_IMPLEMENTATION.md) for technical specification and implementation guide.
 
 ## License
 

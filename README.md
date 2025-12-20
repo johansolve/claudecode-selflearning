@@ -262,7 +262,7 @@ För användare med 50+ learnings som behöver mer avancerad funktionalitet finn
 - **Usage tracking** - Spåra hur ofta patterns används
 - **MCP Server** - Dedikerade verktyg för kunskapssökning
 
-Se `ADVANCED_IMPLEMENTATION.md` för teknisk specifikation och implementationsguide.
+Se [`ADVANCED_IMPLEMENTATION.md`](ADVANCED_IMPLEMENTATION.md) för teknisk specifikation och implementationsguide.
 
 ## License
 
