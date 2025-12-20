@@ -1,5 +1,7 @@
 # Claude Code Self-Learning System
 
+**Svenska** | [English](README.en.md)
+
 Ett självlärande system som transformerar Claude Code från "Execute & Forget" till "Execute & Learn".
 
 ## Översikt
@@ -268,4 +270,5 @@ MIT
 
 ## Författare
 
-Designat för Johan's Claude Code setup.
+Johan Sölve (idéer & synpunkter)
+Claude Code (själva jobbet)
