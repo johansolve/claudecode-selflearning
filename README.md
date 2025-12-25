@@ -8,6 +8,8 @@ Ett självlärande system som transformerar Claude Code från "Execute & Forget"
 
 Detta system gör att Claude Code kan extrahera, lagra och återanvända kunskaper från tidigare sessioner. När du löser problem tillsammans med Claude kan dessa lärdomar sparas som skills som automatiskt laddas i framtida sessioner.
 
+**Filosofi: Compounding Knowledge** - Varje session lägger till patterns, tekniker och insikter som gör Claude smartare över tid. Kunskap förstärker sig själv - dagens learnings bygger på gårdagens, vilket skapar en ständigt växande expertis.
+
 **Nuvarande implementation:** En enkel, fungerande lösning baserad på Claude Code's inbyggda skill-system.
 
 ## Hur det fungerar
@@ -32,12 +34,14 @@ Claude applicerar lärdomar proaktivt
 
 ### Vad det gör
 
-1. Sammanfattar nuvarande session (diskussioner, vad som fungerade/inte fungerade)
-2. Analyserar kodändringar (uncommitted, commits, eller båda)
-3. Extraherar patterns, tekniker och kunskap
-4. Kategoriserar med taggar (security, performance, php, etc.)
-5. Frågar om lagringsplats (Global eller Projekt)
-6. Skapar/uppdaterar skills som laddas automatiskt i framtida sessioner
+1. **Frågar om lagringsplats** (Global eller Projekt) - påverkar vad som är värt att spara
+2. **Sammanfattar sessionen** - diskussioner, vad som fungerade/inte fungerade
+3. **Analyserar kodändringar** - uncommitted, commits, eller båda
+4. **Extraherar patterns** - tekniker och kunskap som är värdefull att återanvända
+5. **Kategoriserar med taggar** - security, performance, php, etc.
+6. **Skapar/uppdaterar skills** - laddas automatiskt i framtida sessioner
+
+**OBS:** Om inga värdefulla learnings hittas sparas inget. Detta är normalt för rutinuppgifter - inte varje session producerar återanvändbar kunskap.
 
 ### Scope-alternativ
 
@@ -136,15 +140,23 @@ Lägg till i projektets `.claude/settings.local.json` med samma innehåll som ov
 
 ## Nyckelfeatures
 
-### Context poisoning prevention
+### Kvalitetsfilter och selectivity
 
-Session-historik innehåller både lyckade och misslyckade ansatser. Systemet separerar:
+Systemet balanserar att bygga kunskap över tid med att undvika informationsbrus:
 
-- **What Worked** - I final kod, inga användarkorrektioner
-- **What Didn't Work** - Prövat men övergivet, användaren korrigerade
-- **Key Insight** - Varför en approach vann över andra
+**Sparar värdefulla learnings:**
+- Patterns/tekniker upptäckta genom trial-and-error
+- Anti-patterns från verkliga misslyckanden (förhindrar upprepade misstag)
+- Icke-självklara lösningar på vanliga problem
+- Domänspecifika best practices från erfarenhet
+- Insikter om "varför X fungerar bättre än Y i kontext Z"
 
-Misslyckade ansatser är värdefulla - de förhindrar att samma misstag görs igen.
+**Sparar INTE:**
+- Rå implementation details utan mönster
+- Standard framework-användning som finns i dokumentationen
+- Kronologiska loggar utan insikter om VARFÖR
+
+Session-historik innehåller både lyckade och misslyckade ansatser. Systemet separerar vad som fungerade (i final kod) från vad som misslyckades (prövat men övergivet), och extraherar de lärdomar som gör Claude smartare nästa gång.
 
 ### Intelligent uppdatering
 

@@ -8,6 +8,8 @@ A self-learning system that transforms Claude Code from "Execute & Forget" to "E
 
 This system enables Claude Code to extract, store, and reuse knowledge from previous sessions. When you solve problems with Claude, those learnings can be saved as skills that automatically load in future sessions.
 
+**Philosophy: Compounding Knowledge** - Each session adds patterns, techniques, and insights that make Claude smarter over time. Knowledge reinforces itself - today's learnings build on yesterday's, creating continuously growing expertise.
+
 **Current implementation:** A simple, working solution based on Claude Code's built-in skill system.
 
 ## How it works
@@ -32,12 +34,14 @@ Claude applies learnings proactively
 
 ### What it does
 
-1. Summarizes the current session (discussions, what worked/didn't work)
-2. Analyzes code changes (uncommitted, commits, or both)
-3. Extracts patterns, techniques, and knowledge
-4. Categorizes with tags (security, performance, php, etc.)
-5. Prompts for storage location (Global or Project)
-6. Creates/updates skills that automatically load in future sessions
+1. **Prompts for storage location** (Global or Project) - affects what's worth saving
+2. **Summarizes the session** - discussions, what worked/didn't work
+3. **Analyzes code changes** - uncommitted, commits, or both
+4. **Extracts patterns** - techniques and knowledge valuable to reuse
+5. **Categorizes with tags** - security, performance, php, etc.
+6. **Creates/updates skills** - automatically load in future sessions
+
+**NOTE:** If no valuable learnings are found, nothing is saved. This is normal for routine tasks - not every session produces reusable knowledge.
 
 ### Scope options
 
@@ -136,15 +140,23 @@ Add to the project's `.claude/settings.local.json` with the same content as abov
 
 ## Key features
 
-### Context poisoning prevention
+### Quality filter and selectivity
 
-Session history contains both successful and failed approaches. The system separates:
+The system balances building knowledge over time with avoiding information noise:
 
-- **What Worked** - In final code, no user corrections
-- **What Didn't Work** - Tried but abandoned, user corrected
-- **Key Insight** - Why one approach won over others
+**Saves valuable learnings:**
+- Patterns/techniques discovered through trial-and-error
+- Anti-patterns from actual failures (prevents repeated mistakes)
+- Non-obvious solutions to common problems
+- Domain-specific best practices learned from experience
+- Insights about "why X works better than Y in context Z"
 
-Failed approaches are valuable - they prevent repeating the same mistakes.
+**Does NOT save:**
+- Raw implementation details without patterns
+- Standard framework usage documented in official docs
+- Chronological logs without insights about WHY
+
+Session history contains both successful and failed approaches. The system separates what worked (in final code) from what failed (tried but abandoned), and extracts the learnings that make Claude smarter next time.
 
 ### Intelligent updating
 
