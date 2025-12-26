@@ -290,6 +290,13 @@ INSTRUCTIONS:
 
 IMPORTANT: Keep SKILL.md lightweight to avoid context bloat!
 
+**REQUIRED: Frontmatter per agentskills.io specification**
+SKILL.md MUST start with YAML frontmatter (enclosed by `---`) containing:
+- `name`: Required. Lowercase letters, numbers, hyphens only. Must match directory name.
+- `description`: Required. Explains functionality and when to use (1-1024 chars).
+
+Without valid frontmatter, the skill will NOT load correctly in Claude Code.
+
 NOTE: This file will be read by future Claude sessions. Use "you" to refer to that future Claude.
 
 ---
