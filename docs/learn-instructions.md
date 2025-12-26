@@ -293,7 +293,8 @@ IMPORTANT: Keep SKILL.md lightweight to avoid context bloat!
 **REQUIRED: Frontmatter per agentskills.io specification**
 SKILL.md MUST start with YAML frontmatter (enclosed by `---`) containing:
 - `name`: Required. Lowercase letters, numbers, hyphens only. Must match directory name.
-- `description`: Required. Explains functionality and when to use (1-1024 chars).
+- `description`: Required. Explains what the skill does and when to use it. Should include specific keywords that help agents identify relevant tasks. (1-1024 chars).
+
 
 Without valid frontmatter, the skill will NOT load correctly in Claude Code.
 
@@ -301,7 +302,7 @@ NOTE: This file will be read by future Claude sessions. Use "you" to refer to th
 
 ---
 name: learned-{tag}
-description: {Tag} patterns learned from real implementations
+description: Extracts text and tables from PDF files, fills PDF forms, and merges multiple PDFs. Use when working with PDF documents or when the user mentions PDFs, forms, or document extraction. Tags: {comma separated}
 ---
 
 You have {tag} knowledge from actual implementations.
